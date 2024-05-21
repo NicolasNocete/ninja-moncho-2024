@@ -5,7 +5,10 @@ export default class Game extends Phaser.Scene {
     super("main");
   }
 
-  init() {}
+  init() {
+    this.gameOver = false;
+    this.timer = 10;
+  }
 
   preload() {
     //cargar assets
@@ -59,18 +62,64 @@ export default class Game extends Phaser.Scene {
     // evento 1 segundo
     this.time.addEvent({
       delay: 1000,
-      callback: console.log("hola"),
+      callback: this.onSecond,
       callbackScope: this,
       loop: true,
     });
 
+    // add tecla r
+    this.r = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+
+    // evento 1 segundo
+    this.time.addEvent({
+      delay: 1000,
+      callback: this.handlerTimer,
+      callbackScope: this,
+      loop: true,
+    });
+
+    //agregar texto de timer en la esquina superior derecha
+    this.timerText = this.add.text(10, 10, `tiempo restante: ${this.timer}`, {
+      fontSize: "32px",
+      fill: "#fff",
+    });
+
     //agregar collider entre recolectables y personaje
-    //this.physics.add.collider(this.personaje, this.recolectables, CAMBIAR POR FUNCION CALLBACK, null, this);
+    this.physics.add.collider(
+      this.personaje,
+      this.recolectables,
+      this.onShapeCollect,
+      null,
+      this
+    );
   }
 
-  //CREAR FUNCION CALLBACK PARA LA RECOLECCION DE RECOLECTABLES
+  update() {
+    if (this.gameOver && this.r.isDown) {
+      this.scene.restart();
+    }
+    if (this.gameOver) {
+      this.physics.pause();
+      this.timerText.setText("Game Over");
+      return;
+    }
+    // movimiento personaje
+    if (this.cursor.left.isDown) {
+      this.personaje.setVelocityX(-160);
+    } else if (this.cursor.right.isDown) {
+      this.personaje.setVelocityX(160);
+    } else {
+      this.personaje.setVelocityX(0);
+    }
+    if (this.cursor.up.isDown && this.personaje.body.touching.down) {
+      this.personaje.setVelocityY(-330);
+    }
+  }
 
   onSecond() {
+    if (this.gameOver) {
+      return;
+    }
     // crear recolectable
     const tipos = ["triangulo", "cuadrado", "rombo"];
     const tipo = Phaser.Math.RND.pick(tipos);
@@ -82,17 +131,17 @@ export default class Game extends Phaser.Scene {
     recolectable.setVelocity(0, 100);
   }
 
-  update() {
-    // movimiento personaje
-    if (this.cursor.left.isDown) {
-      this.personaje.setVelocityX(-160);
-    } else if (this.cursor.right.isDown) {
-      this.personaje.setVelocityX(160);
-    } else {
-      this.personaje.setVelocityX(0);
-    }
-    if (this.cursor.up.isDown && this.personaje.body.touching.down) {
-      this.personaje.setVelocityY(-330);
+  onShapeCollect(personaje, recolectable) {
+    console.log("recolectado ", recolectable.texture.key);
+    recolectable.destroy();
+    //recolectable.disableBody(true, true);
+  }
+
+  handlerTimer() {
+    this.timer -= 1;
+    this.timerText.setText(`tiempo restante: ${this.timer}`);
+    if (this.timer === 0) {
+      this.gameOver = true;
     }
   }
 }
