@@ -7,7 +7,13 @@ export default class Game extends Phaser.Scene {
 
   init() {
     this.gameOver = false;
-    this.timer = 10;
+    this.timer = 30;
+    this.score = 0;
+    this.shapes = {
+      triangulo: { points: 10, count: 0 },
+      cuadrado: { points: 20, count: 0 },
+      rombo: { points: 30, count: 0 },
+    };
   }
 
   preload() {
@@ -84,6 +90,15 @@ export default class Game extends Phaser.Scene {
       fill: "#fff",
     });
 
+    this.scoreText = this.add.text(
+      10,
+      50,
+      `Puntaje: ${this.score}
+        T: ${this.shapes["triangulo"].count}
+        C: ${this.shapes["cuadrado"].count}
+        R: ${this.shapes["rombo"].count}`
+    );
+
     //agregar collider entre recolectables y personaje
     this.physics.add.collider(
       this.personaje,
@@ -130,11 +145,54 @@ export default class Game extends Phaser.Scene {
     );
     recolectable.setVelocity(0, 100);
   }
-
+  /*if(nombreFig === "triangulo"){
+      this.score += 10;
+      this.shapes.triangulo.count += 1;
+    }
+    if(nombreFig === "cuadrado"){
+      this.score += 20;
+      this.shapes.cuadrado.count += 1;
+    }
+    if(nombreFig === "rombo"){
+      this.score += 30;
+      this.shapes.rombo.count += 1;
+    }*/
   onShapeCollect(personaje, recolectable) {
     console.log("recolectado ", recolectable.texture.key);
+    const nombreFig = recolectable.texture.key;
+
+    this.score += this.shapes[nombreFig].points;
+    this.shapes[nombreFig].count += 1;
+
+    console.table(this.shapes);
+    console.log("score ", this.score);
     recolectable.destroy();
     //recolectable.disableBody(true, true);
+
+    this.scoreText.setText(
+      `Puntaje: ${this.score}
+        T: ${this.shapes["triangulo"].count}
+        C: ${this.shapes["cuadrado"].count}
+        R: ${this.shapes["rombo"].count}`
+    );
+
+    this.checkWin();
+  }
+
+  checkWin() {
+    const cumplePuntos = this.score >= 100;
+    const cumpleFiguras =
+      this.shapes["triangulo"].count >= 2 &&
+      this.shapes["cuadrado"].count >= 2 &&
+      this.shapes["rombo"].count >= 2;
+
+    if (cumplePuntos && cumpleFiguras) {
+      console.log("Ganaste");
+      this.scene.start("end", {
+        score: this.score,
+        gameOver: this.gameOver,
+      });
+    }
   }
 
   handlerTimer() {
@@ -142,6 +200,10 @@ export default class Game extends Phaser.Scene {
     this.timerText.setText(`tiempo restante: ${this.timer}`);
     if (this.timer === 0) {
       this.gameOver = true;
+      this.scene.start("end", {
+        score: this.score,
+        gameOver: this.gameOver,
+      });
     }
   }
 }
